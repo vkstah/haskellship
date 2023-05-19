@@ -18,5 +18,5 @@ Alternatively, you can compile the application and run it:
 
 ```console
 $ ghc --make Main.hs
-$ ./Main.hs
+$ ./Main
 ```
