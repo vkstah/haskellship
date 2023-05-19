@@ -1,5 +1,7 @@
 import Control.Concurrent
 
+type Coordinate = (Int, Int)
+
 getPlayerInput :: String -> IO String
 getPlayerInput str = do
   putStrLn str
@@ -7,7 +9,6 @@ getPlayerInput str = do
 
 getNames :: IO [String]
 getNames = do
-  putStrLn "Let's begin by getting the names of both players."
   playerOneName <- getPlayerInput "Player 1, please enter your name:"
   putStrLn $ "Hello " ++ playerOneName ++ "!"
   threadDelay 2000000
@@ -16,14 +17,10 @@ getNames = do
   threadDelay 2000000
   return [playerOneName, playerTwoName]
 
-greeting :: IO ()
-greeting = do
-  putStrLn "Welcome to Haskellship!"
-
 main :: IO ()
 main = do
-  greeting
-
+  putStrLn "Welcome to Haskellship!"
+  putStrLn "Let's begin by getting the names of both players."
   names <- getNames
   putStrLn $ "Ok " ++ head names ++ " and " ++ last names ++ ", let's begin!"
 
