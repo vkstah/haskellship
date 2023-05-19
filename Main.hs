@@ -1,14 +1,17 @@
 import Control.Concurrent
 
+getPlayerInput :: String -> IO String
+getPlayerInput str = do
+  putStrLn str
+  getLine
+
 getNames :: IO [String]
 getNames = do
   putStrLn "Let's begin by getting the names of both players."
-  putStrLn "Player 1, please enter your name:"
-  playerOneName <- getLine
+  playerOneName <- getPlayerInput "Player 1, please enter your name:"
   putStrLn $ "Hello " ++ playerOneName ++ "!"
   threadDelay 2000000
-  putStrLn "Player 2, please enter your name:"
-  playerTwoName <- getLine
+  playerTwoName <- getPlayerInput "Player 2, please enter your name:"
   putStrLn $ "Hello " ++ playerTwoName ++ "!"
   threadDelay 2000000
   return [playerOneName, playerTwoName]
