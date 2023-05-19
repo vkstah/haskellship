@@ -28,7 +28,8 @@ main = do
   putStrLn $ "Ok " ++ head names ++ " and " ++ last names ++ ", let's begin!"
 
   -- TODO: Game implementation
-  --    1. Initialize empty field (10x10)
-  --    2. Place ships on the board using coordinates (x, y)
+  --    1. Initialize empty board (10x10) for each player
+  --    2. Place ships on the board using coordinates (x,y)
   --    3. Take turns at firing to a set of coordinates on the board
   --    4. Once all of the ships are destroyed from either player, end the game
+  --    5. Declare one player as a winner
