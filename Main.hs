@@ -1,3 +1,4 @@
+import Cell
 import Control.Concurrent
 
 type Coordinate = (Int, Int)
