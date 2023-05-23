@@ -1,5 +1,6 @@
-import Cell
 import Control.Concurrent
+
+import Game
 
 type Coordinate = (Int, Int)
 
@@ -24,6 +25,7 @@ main = do
   putStrLn "Let's begin by getting the names of both players."
   names <- getNames
   putStrLn $ "Ok " ++ head names ++ " and " ++ last names ++ ", let's begin!"
+  start []
 
   -- TODO: Game implementation
   --    1. Initialize empty board (10x10) for each player
