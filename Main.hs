@@ -16,7 +16,6 @@ getNames = do
   putStrLn $ "Hello " ++ playerTwoName ++ "!"
   return [playerOneName, playerTwoName]
 
-
 -- TODO: Game implementation
 --    1. If either of the players' boards has no more Ship cells, the game is over.
 --          -> Update the game state to GameOver
