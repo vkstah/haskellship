@@ -1,10 +1,12 @@
 module Player where
 
-newtype Player = Player
+import Ship ( Ship )
+
+data Player = Player
   { name :: String
+  , ships :: [Ship]
   } deriving (Eq, Show)
 
 printBoard :: Player -> IO ()
 printBoard player = do
-  putStrLn (name player ++ "'s board:")
   putStrLn "---Board here---"
