@@ -28,9 +28,9 @@ start game = do
   putStrLn (name (currentPlayer game) ++ "'s turn!")
   line <- getLine
   if line == "quit"
-      then do return ()
-    else
-      start $ switchPlayer game
+    then do return ()
+  else
+    start $ switchPlayer game
 
 main :: IO ()
 main = do
