@@ -1,6 +1,6 @@
 # Haskellship
 
-A simple Battleship game written in Haskell.
+A simple CLI Battleship game written in Haskell.
 
 ## Requirements
 
