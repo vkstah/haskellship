@@ -1,7 +1,17 @@
 import Game
 import Logic
+import Player
+import Control.Monad
+import GHC.IO.Exception
+import System.Environment
+import System.Process
 
 type Coordinate = (Int, Int)
+
+clearTerminal :: IO ()
+clearTerminal = do
+  system "clear"
+  return ()
 
 getPlayerInput :: String -> IO String
 getPlayerInput str = do
@@ -16,31 +26,26 @@ getNames = do
   putStrLn $ "Hello " ++ playerTwoName ++ "!"
   return [playerOneName, playerTwoName]
 
--- TODO: Game implementation
---    1. If either of the players' boards has no more Ship cells, the game is over.
---          -> Update the game state to GameOver
---    2. Otherwise return just the game as it is.
-checkGameOver :: Game -> Game
-checkGameOver game = undefined
-
-start :: Game -> IO ()
-start game = do
+playerTurn :: Game -> IO ()
+playerTurn game = do
+  when (shouldClearTerminal game) clearTerminal
   putStrLn (name (currentPlayer game) ++ "'s turn!")
+  printBoard $ currentPlayer game
   line <- getLine
   if line == "quit"
     then do return ()
   else
-    start $ switchPlayer game
+    playerTurn $ switchPlayer game
 
 main :: IO ()
 main = do
+  args <- getArgs
   putStrLn "Welcome to Haskellship!"
   putStrLn "Let's begin by getting the names of both players."
   names <- getNames
   let players = [Player $ head names, Player $ names!!1]
-  let game = Game Running players (head players)
   putStrLn $ "Ok "++ name (head players)  ++ " and " ++ name (players!!1) ++ ", let's begin!"
-  start game
+  playerTurn $ initialGame players $ "noclear" `notElem` args
 
   -- TODO: Game implementation
   --    1. Initialize empty board (10x10) for each player
