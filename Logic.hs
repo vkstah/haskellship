@@ -2,29 +2,45 @@ module Logic where
 
 import Data.Char (digitToInt)
 
-import Board ( Board, Cell(Empty, Miss, Hit) )
-import Game ( Game(players, currentPlayer), boardSize )
-import Ship ( Ship, Coordinates )
+import Board ( Board, Cell(Empty, Miss, Hit), emptyBoard )
+import Game ( Game(state, players, currentPlayer), boardSize )
+import Ship ( Ship(name, coordinates, size), Coordinates )
+
+transformList :: (Eq a, Num a, Enum a) => a -> b -> [b] -> [b]
+transformList x y = zipWith (\ i v -> (if i == x then y else v)) [0 .. ]
 
 switchPlayer :: Game -> Game
 switchPlayer game
   | currentPlayer game == fst (players game)  = game { currentPlayer = snd $ players game }
   | otherwise                                 = game { currentPlayer = fst $ players game }
 
-fire :: Board -> Coordinates -> Board
-fire = undefined
+isEmptyCell :: Cell -> Bool
+isEmptyCell Empty = True
+isEmptyCell _ = False
 
-isEmpty :: Cell -> Bool
-isEmpty Miss = True
-isEmpty _ = False
+isHitCell :: Cell -> Bool
+isHitCell Hit = True
+isHitCell _ = False
 
-isHit :: Cell -> Bool
-isHit Hit = True
-isHit _ = False
+isMissCell :: Cell -> Bool
+isMissCell Miss = True
+isMissCell _ = False
 
-isMiss :: Cell -> Bool
-isMiss Miss = True
-isMiss _ = False
+mapCellToBoard :: Cell -> Char
+mapCellToBoard cell
+  | isHitCell cell = 'x'
+  | isEmptyCell cell = ' '
+  | isMissCell cell = 'o'
+  | otherwise = '?'
+
+fireHitShip :: Coordinates -> [Ship] -> Bool
+fireHitShip coords ships = undefined
+
+markMiss :: Coordinates -> Board -> Board
+markMiss (x,y) = transformList x (transformList y Miss (emptyBoard!!x))
+
+markHit :: Coordinates -> Board -> Board
+markHit (x,y) = transformList x (transformList y Hit (emptyBoard!!x))
 
 stringToCoordinates :: String -> Coordinates
 stringToCoordinates (x:y)
@@ -52,18 +68,18 @@ isValidCoordinates coords
   | otherwise                 = False
   where maxSize = boardSize - 1
 
-isValidShipCoordinates :: Ship -> Int -> Bool
-isValidShipCoordinates shipCoordinates size
-  | not (isValidCoordinates (fst shipCoordinates))
-    || not (isValidCoordinates (snd shipCoordinates)) = False
+isValidShipCoordinates :: (Coordinates, Coordinates) -> Int -> Bool
+isValidShipCoordinates coords size
+  | not (isValidCoordinates (fst coords))
+    || not (isValidCoordinates (snd coords)) = False
   | not $ isShipHorizontal || isShipVertical = False
   | isShipHorizontal && horizontalDiff /= size - 1 = False
   | isShipVertical && verticalDiff /= size - 1 = False
   | otherwise = True
-  where isShipHorizontal  = isRangeHorizontal shipCoordinates
-        isShipVertical    = isRangeVertical shipCoordinates
-        horizontalDiff    = snd (snd shipCoordinates) - snd (fst shipCoordinates)
-        verticalDiff      = fst (snd shipCoordinates) - fst (fst shipCoordinates)
+  where isShipHorizontal  = isRangeHorizontal coords
+        isShipVertical    = isRangeVertical coords
+        horizontalDiff    = snd (snd coords) - snd (fst coords)
+        verticalDiff      = fst (snd coords) - fst (fst coords)
 
 isValidCoordinatesRange :: [String] -> Bool
 isValidCoordinatesRange str = undefined
@@ -77,6 +93,9 @@ isRangeVertical :: (Coordinates, Coordinates) -> Bool
 isRangeVertical (x,y)
   | snd x == snd y  = True
   | otherwise       = False
+
+transformGame :: Game -> Game
+transformGame game = undefined
 
 -- TODO: Game implementation
 --    1. If either of the players' boards has no more Ship cells, the game is over.

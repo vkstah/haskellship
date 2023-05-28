@@ -5,11 +5,11 @@ import GHC.IO.Exception ()
 import System.Environment ( getArgs )
 import System.Process ( system )
 
-import Board (emptyBoard)
+import Board ( Board, emptyBoard, Cell(Empty, Hit, Miss) )
 import Game
-import Logic ( isValidShipCoordinates, switchPlayer, stringToCoordinates )
-import Player ( Player(Player, name, ships) )
-import Ship ( Coordinates, Ship )
+import Logic ( fireHitShip, isValidShipCoordinates, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss )
+import Player ( Player(Player, name, ships, board) )
+import Ship ( Coordinates, Ship(Ship) )
 
 type Coordinate = (Int, Int)
 
@@ -19,21 +19,25 @@ clearTerminal = do
   return ()
 
 printSuccess :: String -> IO()
-printSuccess str = do
-  putStrLn $ "\ESC[32m" ++ str ++ "\ESC[0m"
+printSuccess str = putStrLn $ "\ESC[32m" ++ str ++ "\ESC[0m"
 
 printError :: String -> IO ()
-printError str = do
-  putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
+printError str = putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
+
+printNotification :: String -> IO ()
+printNotification str = putStrLn $ "\ESC[35m" ++ str ++ "\ESC[0m"
 
 getPlayerInput :: String -> IO String
 getPlayerInput str = do
   putStrLn str
   getLine
 
-printBoard :: Player -> IO ()
-printBoard player = do
-  putStrLn "---Board here---"
+printBoard :: Board -> IO ()
+printBoard board = do
+  let cells = [map mapCellToBoard row | row <- board]
+  putStrLn $ replicate 12 'H'
+  mapM_ (\row -> putStrLn $ "H" ++ row ++ "H") cells
+  putStrLn $ replicate 12 'H'
 
 getNames :: IO [String]
 getNames = do
@@ -52,6 +56,16 @@ printTurnCountdown seconds = do
       threadDelay 1000000
       printTurnCountdown (seconds - 1)
 
+getCoordinates :: String -> IO Coordinates
+getCoordinates str = do
+  coordsLine <- getPlayerInput str
+  let coords = words coordsLine
+  if length coords == 1
+    then do return $ stringToCoordinates $ head coords
+    else do
+      printError "Invalid coordinates."
+      getCoordinates str
+
 getCoordinatesRange :: String -> IO (Coordinates, Coordinates)
 getCoordinatesRange str = do
   coordsLine <- getPlayerInput str
@@ -59,14 +73,15 @@ getCoordinatesRange str = do
   if length coords == 2
     then do return (stringToCoordinates $ head coords, stringToCoordinates $ coords !! 1)
     else do
-      printError "Invalid ship range."
+      printError "Invalid coordinates range."
       getCoordinatesRange str
 
 getShip :: String -> Int -> IO Ship
 getShip name size = do
   range <- getCoordinatesRange $ "Please enter the coordinates of your " ++ name ++ " (" ++ show size ++ " cells):"
   if isValidShipCoordinates range size
-    then do return range
+    then do
+      return $ Ship name range size
     else do
       printError "Invalid ship size."
       getShip name size
@@ -80,12 +95,15 @@ playerTurn :: Game -> IO ()
 playerTurn game = do
   when (shouldClearTerminal game) clearTerminal
   let player = currentPlayer game
-  putStrLn (name player ++ "'s turn!")
-  printBoard player
-  line <- getLine
-  printSuccess "You sunk a Battleship!"
-  printTurnCountdown 3
-  playerTurn $ switchPlayer game
+  let opponent = opponentPlayer game
+  putStrLn (Player.name player ++ "'s turn!")
+  printBoard (board opponent)
+  if state game == GameOver
+    then do
+      printNotification $ Player.name player ++ " won the game!"
+    else do
+      printTurnCountdown 3
+      playerTurn $ switchPlayer game
 
 main :: IO ()
 main = do

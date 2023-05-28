@@ -1,4 +1,8 @@
 module Ship where
 
 type Coordinates = (Int, Int)
-type Ship = (Coordinates, Coordinates)
+data Ship = Ship
+  { name :: String
+  , coordinates :: (Coordinates, Coordinates)
+  , size :: Int
+  } deriving (Eq, Show)
