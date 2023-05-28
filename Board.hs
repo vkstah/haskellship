@@ -1,6 +1,6 @@
 module Board where
 
-data Cell = Empty | Ship | Hit | Miss deriving (Eq, Show)
+data Cell = Empty | Hit | Miss deriving (Eq, Show)
 type Board = [[Cell]]
 
 emptyBoard :: Board
