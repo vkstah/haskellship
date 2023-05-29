@@ -40,3 +40,10 @@ The application will attempt to clear the terminal each player turn to prevent p
 $ ghc Main.hs
 $ ./Main noclear
 ```
+
+You can do this with a sample game as well:
+
+```console
+$ ghc Main.hs
+$ ./Main < sample-game noclear
+```
