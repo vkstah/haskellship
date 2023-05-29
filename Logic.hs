@@ -5,9 +5,7 @@ import Data.Char (digitToInt)
 import Board ( Board, Cell(Empty, Miss, Hit), emptyBoard )
 import Game ( Game(state, players, currentPlayer), boardSize )
 import Ship ( Ship(name, coordinates, size), Coordinates )
-
-transformList :: (Eq a, Num a, Enum a) => a -> b -> [b] -> [b]
-transformList x y = zipWith (\ i v -> (if i == x then y else v)) [0 .. ]
+import Utility ( transformList )
 
 switchPlayer :: Game -> Game
 switchPlayer game
