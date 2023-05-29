@@ -1,16 +1,17 @@
 module Logic where
 
-import Data.Char (digitToInt)
+import Data.Char
 
 import Board ( Board, Cell(Empty, Miss, Hit), emptyBoard )
-import Game ( Game(state, players, currentPlayer), boardSize )
+import Game ( Game(state, playerOne, playerTwo, currentPlayer), boardSize )
+import Player ( Player )
 import Ship ( Ship(name, coordinates, size), Coordinates )
 import Utility ( transformList )
 
 switchPlayer :: Game -> Game
 switchPlayer game
-  | currentPlayer game == fst (players game)  = game { currentPlayer = snd $ players game }
-  | otherwise                                 = game { currentPlayer = fst $ players game }
+  | currentPlayer game == playerOne game  = game { currentPlayer = playerTwo game }
+  | otherwise                             = game { currentPlayer = playerOne game }
 
 isEmptyCell :: Cell -> Bool
 isEmptyCell Empty = True
@@ -40,22 +41,28 @@ markMiss (x,y) = transformList x (transformList y Miss (emptyBoard!!x))
 markHit :: Coordinates -> Board -> Board
 markHit (x,y) = transformList x (transformList y Hit (emptyBoard!!x))
 
+opponentPlayer :: Game -> Player
+opponentPlayer game
+  | currentPlayer game == playerOne game  = playerTwo game
+  | otherwise                             = playerOne game
+
 stringToCoordinates :: String -> Coordinates
-stringToCoordinates (x:y)
+stringToCoordinates [x,y]
   | not $ yIsValid y = (-1, -1)
-  | x == 'A' = (0, stringToIntMinusOne y)
-  | x == 'B' = (1, stringToIntMinusOne y)
-  | x == 'C' = (2, stringToIntMinusOne y)
-  | x == 'D' = (3, stringToIntMinusOne y)
-  | x == 'E' = (4, stringToIntMinusOne y)
-  | x == 'F' = (5, stringToIntMinusOne y)
-  | x == 'G' = (6, stringToIntMinusOne y)
-  | x == 'H' = (7, stringToIntMinusOne y)
-  | x == 'I' = (8, stringToIntMinusOne y)
-  | x == 'J' = (9, stringToIntMinusOne y)
+  | x == 'A' = (0, charToIntMinusOne y)
+  | x == 'B' = (1, charToIntMinusOne y)
+  | x == 'C' = (2, charToIntMinusOne y)
+  | x == 'D' = (3, charToIntMinusOne y)
+  | x == 'E' = (4, charToIntMinusOne y)
+  | x == 'F' = (5, charToIntMinusOne y)
+  | x == 'G' = (6, charToIntMinusOne y)
+  | x == 'H' = (7, charToIntMinusOne y)
+  | x == 'I' = (8, charToIntMinusOne y)
+  | x == 'J' = (9, charToIntMinusOne y)
   | otherwise = (-1, -1)
-  where stringToIntMinusOne str = read str - 1
-        yIsValid str            = stringToIntMinusOne str >= 0 && stringToIntMinusOne str <= 9
+  where charToIntMinusOne c = digitToInt c - 1 :: Int
+        yIsValid c          = isDigit c && charToIntMinusOne c >= 0 && charToIntMinusOne c <= 9
+stringToCoordinates _ = (-1, -1)
 
 isValidCoordinates :: Coordinates -> Bool
 isValidCoordinates coords
@@ -66,21 +73,29 @@ isValidCoordinates coords
   | otherwise                 = False
   where maxSize = boardSize - 1
 
-isValidShipCoordinates :: (Coordinates, Coordinates) -> Int -> Bool
-isValidShipCoordinates coords size
+isValidShipCoordinates :: (Coordinates, Coordinates) -> Int -> [Ship] -> Bool
+isValidShipCoordinates coords size board
   | not (isValidCoordinates (fst coords))
-    || not (isValidCoordinates (snd coords)) = False
-  | not $ isShipHorizontal || isShipVertical = False
-  | isShipHorizontal && horizontalDiff /= size - 1 = False
-  | isShipVertical && verticalDiff /= size - 1 = False
-  | otherwise = True
+    || not (isValidCoordinates (snd coords))        = False
+  | not $ isShipHorizontal || isShipVertical        = False
+  | isShipHorizontal && horizontalDiff /= size - 1  = False
+  | isShipVertical && verticalDiff /= size - 1      = False
+  | otherwise                                       = True
   where isShipHorizontal  = isRangeHorizontal coords
         isShipVertical    = isRangeVertical coords
         horizontalDiff    = snd (snd coords) - snd (fst coords)
         verticalDiff      = fst (snd coords) - fst (fst coords)
 
-isValidCoordinatesRange :: [String] -> Bool
-isValidCoordinatesRange str = undefined
+isValidCoordinatesRange :: (Coordinates, Coordinates) -> Bool
+isValidCoordinatesRange coords
+  | not (isValidCoordinates (fst coords))
+    || not (isValidCoordinates (snd coords))                    = False
+  | not $ isRangeHorizontal coords || isRangeHorizontal coords  = False
+  | isRangeHorizontal coords && horizontalDiff <= 0             = False
+  | isRangeVertical coords && verticalDiff <= 0                 = False
+  | otherwise                                                   = True
+  where horizontalDiff    = snd (snd coords) - snd (fst coords)
+        verticalDiff      = fst (snd coords) - fst (fst coords)
 
 isRangeHorizontal :: (Coordinates, Coordinates) -> Bool
 isRangeHorizontal (x,y)

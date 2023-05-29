@@ -7,7 +7,7 @@ import System.Process ( system )
 
 import Board ( Board, emptyBoard, Cell(Empty, Hit, Miss) )
 import Game
-import Logic ( fireHitShip, isValidShipCoordinates, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss )
+import Logic ( fireHitShip, isValidShipCoordinates, isValidCoordinatesRange, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, isValidCoordinates )
 import Player ( Player(Player, name, ships, board) )
 import Ship ( Coordinates, Ship(Ship) )
 
@@ -27,26 +27,6 @@ printError str = putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
 printNotification :: String -> IO ()
 printNotification str = putStrLn $ "\ESC[35m" ++ str ++ "\ESC[0m"
 
-getPlayerInput :: String -> IO String
-getPlayerInput str = do
-  putStrLn str
-  getLine
-
-printBoard :: Board -> IO ()
-printBoard board = do
-  let cells = [map mapCellToBoard row | row <- board]
-  putStrLn $ replicate 12 'H'
-  mapM_ (\row -> putStrLn $ "H" ++ row ++ "H") cells
-  putStrLn $ replicate 12 'H'
-
-getNames :: IO [String]
-getNames = do
-  playerOneName <- getPlayerInput "Player 1, please enter your name:"
-  putStrLn $ "Hello " ++ playerOneName ++ "!"
-  playerTwoName <- getPlayerInput "Player 2, please enter your name:"
-  putStrLn $ "Hello " ++ playerTwoName ++ "!"
-  return [playerOneName, playerTwoName]
-
 printTurnCountdown :: Int -> IO Bool
 printTurnCountdown seconds = do
   if seconds == 0
@@ -56,12 +36,38 @@ printTurnCountdown seconds = do
       threadDelay 1000000
       printTurnCountdown (seconds - 1)
 
+printBoard :: Board -> IO ()
+printBoard board = do
+  let cells = [map mapCellToBoard row | row <- board]
+  putStrLn $ replicate 12 'H'
+  mapM_ (\row -> putStrLn $ "H" ++ row ++ "H") cells
+  putStrLn $ replicate 12 'H'
+
+getPlayerInput :: String -> IO String
+getPlayerInput str = do
+  putStrLn str
+  getLine
+
+getNames :: IO [String]
+getNames = do
+  playerOneName <- getPlayerInput "Player 1, please enter your name:"
+  putStrLn $ "Hello " ++ playerOneName ++ "!"
+  playerTwoName <- getPlayerInput "Player 2, please enter your name:"
+  putStrLn $ "Hello " ++ playerTwoName ++ "!"
+  return [playerOneName, playerTwoName]
+
 getCoordinates :: String -> IO Coordinates
 getCoordinates str = do
   coordsLine <- getPlayerInput str
-  let coords = words coordsLine
-  if length coords == 1
-    then do return $ stringToCoordinates $ head coords
+  let coordsList = words coordsLine
+  if length coordsList == 1
+    then do
+      let coords = stringToCoordinates $ head coordsList
+      if isValidCoordinates coords
+        then do return coords
+        else do
+          printError "Invalid coordinates."
+          getCoordinates str
     else do
       printError "Invalid coordinates."
       getCoordinates str
@@ -69,27 +75,40 @@ getCoordinates str = do
 getCoordinatesRange :: String -> IO (Coordinates, Coordinates)
 getCoordinatesRange str = do
   coordsLine <- getPlayerInput str
-  let coords = words coordsLine
-  if length coords == 2
-    then do return (stringToCoordinates $ head coords, stringToCoordinates $ coords !! 1)
+  let coordsList = words coordsLine
+  if length coordsList == 2
+    then do
+      let coordsRange =
+            (stringToCoordinates $ head coordsList,
+            stringToCoordinates $ coordsList !! 1)
+      if isValidCoordinatesRange coordsRange
+        then do return coordsRange
+        else do
+          printError "Invalid coordinates range."
+          getCoordinatesRange str
     else do
       printError "Invalid coordinates range."
       getCoordinatesRange str
 
-getShip :: String -> Int -> IO Ship
-getShip name size = do
+getShip :: String -> Int -> [Ship] -> IO Ship
+getShip name size currentShips = do
   range <- getCoordinatesRange $ "Please enter the coordinates of your " ++ name ++ " (" ++ show size ++ " cells):"
-  if isValidShipCoordinates range size
+  if isValidShipCoordinates range size currentShips
     then do
       return $ Ship name range size
     else do
       printError "Invalid ship size."
-      getShip name size
+      getShip name size currentShips
 
-getShips :: String -> IO [Ship]
-getShips name = do
-  putStrLn $ name ++ ": place your ships!"
-  sequence [getShip name size | (name, size) <- shipTypes]
+getShips :: [(String, Int)] -> [Ship] -> IO [Ship]
+getShips [] _                   = return []
+getShips (x:xs) currentShips    = do
+  ship <- uncurry getShip x currentShips
+  ships <- getShips xs (ship : currentShips)
+  return $ ship : ships
+
+fire :: Game -> IO Game
+fire game = undefined
 
 playerTurn :: Game -> IO ()
 playerTurn game = do
@@ -97,11 +116,15 @@ playerTurn game = do
   let player = currentPlayer game
   let opponent = opponentPlayer game
   putStrLn (Player.name player ++ "'s turn!")
+  putStrLn ""
   printBoard (board opponent)
+  putStrLn ""
+  fireCoords <- getCoordinates "Enter coordinates to fire:"
   if state game == GameOver
     then do
       printNotification $ Player.name player ++ " won the game!"
     else do
+      putStrLn ""
       printTurnCountdown 3
       playerTurn $ switchPlayer game
 
@@ -111,14 +134,15 @@ main = do
   putStrLn "Welcome to Haskellship!"
   putStrLn "Let's begin by getting the names of both players."
   names <- getNames
-  putStrLn "Alright! Moving onto the ships..."
   let playerOneName = head names
-  playerOneShips <- getShips playerOneName
-  let playerTwoName = names!!1
   let playerOneBoard = emptyBoard
+  putStrLn $ playerOneName ++ ": place your ships!"
+  playerOneShips <- getShips shipTypes initialShips
   let playerOne = Player playerOneName playerOneShips playerOneBoard
-  playerTwoShips <- getShips playerTwoName
+  let playerTwoName = names!!1
   let playerTwoBoard = emptyBoard
+  putStrLn $ playerTwoName ++ ": place your ships!"
+  playerTwoShips <- getShips shipTypes initialShips
   let playerTwo = Player playerTwoName playerTwoShips playerTwoBoard
   let players = (playerOne, playerTwo)
   playerTurn $ initialGame players $ "noclear" `notElem` args
