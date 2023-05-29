@@ -1,15 +1,16 @@
 import Control.Concurrent ( threadDelay )
 import Control.Monad ( unless, when )
-import Data.List ( find )
+import Data.List
 import GHC.IO.Exception ()
 import System.Environment ( getArgs )
 import System.Process ( system )
 
 import Board ( Board, emptyBoard, Cell(Empty, Hit, Miss) )
 import Game
-import Logic ( fireHitShip, isValidShipCoordinates, isValidCoordinatesRange, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, isValidCoordinates )
+import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates )
 import Player ( Player(Player, name, ships, board) )
-import Ship ( Coordinates, Ship(Ship) )
+import Ship ( Coordinates, Ship(Ship, name) )
+import Validate (isValidCoordinates, isValidCoordinatesRange, isValidShipCoordinates, isRangeOverlapping)
 
 type Coordinate = (Int, Int)
 
@@ -66,10 +67,10 @@ getCoordinates str = do
       if isValidCoordinates coords
         then do return coords
         else do
-          printError "Invalid coordinates."
+          printError "ERROR: Invalid coordinates."
           getCoordinates str
     else do
-      printError "Invalid coordinates."
+      printError "ERROR: Invalid coordinates."
       getCoordinates str
 
 getCoordinatesRange :: String -> IO (Coordinates, Coordinates)
@@ -84,10 +85,10 @@ getCoordinatesRange str = do
       if isValidCoordinatesRange coordsRange
         then do return coordsRange
         else do
-          printError "Invalid coordinates range."
+          printError "ERROR: Invalid coordinates range."
           getCoordinatesRange str
     else do
-      printError "Invalid coordinates range."
+      printError "ERROR: Invalid coordinates range."
       getCoordinatesRange str
 
 getShip :: String -> Int -> [Ship] -> IO Ship
@@ -97,7 +98,7 @@ getShip name size currentShips = do
     then do
       return $ Ship name range size
     else do
-      printError "Invalid ship size."
+      printError "ERROR: Invalid ship coordinates."
       getShip name size currentShips
 
 getShips :: [(String, Int)] -> [Ship] -> IO [Ship]
@@ -107,10 +108,7 @@ getShips (x:xs) currentShips    = do
   ships <- getShips xs (ship : currentShips)
   return $ ship : ships
 
-fire :: Game -> IO Game
-fire game = undefined
-
-playerTurn :: Game -> IO ()
+playerTurn:: Game -> IO ()
 playerTurn game = do
   when (shouldClearTerminal game) clearTerminal
   let player = currentPlayer game
@@ -120,13 +118,21 @@ playerTurn game = do
   printBoard (board opponent)
   putStrLn ""
   fireCoords <- getCoordinates "Enter coordinates to fire:"
-  if state game == GameOver
+  let (isHit, sunk, newShips, ship) = fire fireCoords $ ships opponent
+  if isHit
     then do
-      printNotification $ Player.name player ++ " won the game!"
+      if sunk
+        then do
+          putStrLn $ case ship of
+            Nothing -> "Something odd happened... Where's the ship?"
+            Just ship -> "Hit! You destroyed a " ++ Ship.name ship ++ "!"
+        else do
+          putStrLn "Hit!"
     else do
-      putStrLn ""
-      printTurnCountdown 3
-      playerTurn $ switchPlayer game
+      putStrLn "Miss..."
+  putStrLn ""
+  printTurnCountdown 3
+  playerTurn $ transformGame fireCoords isHit newShips game
 
 main :: IO ()
 main = do

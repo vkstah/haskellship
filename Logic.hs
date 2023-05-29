@@ -1,29 +1,20 @@
 module Logic where
 
 import Data.Char
+import Data.List
+import Data.Maybe (isJust)
 
 import Board ( Board, Cell(Empty, Miss, Hit), emptyBoard )
-import Game ( Game(state, playerOne, playerTwo, currentPlayer), boardSize )
-import Player ( Player )
+import Game ( Game(state, playerOne, playerTwo, currentPlayer), boardSize, State (Running, GameOver) )
+import Player ( Player(Player, name, ships, board) )
 import Ship ( Ship(name, coordinates, size), Coordinates )
-import Utility ( transformList )
+import Utility ( transformList, charToInt, removeItem )
+import Validate ( isRangeOverlapping, isHitCell, isEmptyCell, isMissCell, horizontalDiff, isRangeHorizontal, verticalDiff, isRangeVertical )
 
 switchPlayer :: Game -> Game
 switchPlayer game
   | currentPlayer game == playerOne game  = game { currentPlayer = playerTwo game }
   | otherwise                             = game { currentPlayer = playerOne game }
-
-isEmptyCell :: Cell -> Bool
-isEmptyCell Empty = True
-isEmptyCell _ = False
-
-isHitCell :: Cell -> Bool
-isHitCell Hit = True
-isHitCell _ = False
-
-isMissCell :: Cell -> Bool
-isMissCell Miss = True
-isMissCell _ = False
 
 mapCellToBoard :: Cell -> Char
 mapCellToBoard cell
@@ -32,14 +23,24 @@ mapCellToBoard cell
   | isMissCell cell = 'o'
   | otherwise = '?'
 
-fireHitShip :: Coordinates -> [Ship] -> Bool
-fireHitShip coords ships = undefined
+allShipCellCoordinates :: Ship -> [Coordinates]
+allShipCellCoordinates ship
+  | isRangeHorizontal $ coordinates ship =
+      [(x, y) | x <- [fst $ fst $ coordinates ship], y <- [snd (fst $ coordinates ship) .. snd (snd $ coordinates ship)]]
+  | isRangeVertical $ coordinates ship =
+      [(x, y) | x <- [snd $ fst $ coordinates ship], y <- [fst (fst $ coordinates ship) .. fst (snd $ coordinates ship)]]
 
-markMiss :: Coordinates -> Board -> Board
-markMiss (x,y) = transformList x (transformList y Miss (emptyBoard!!x))
-
-markHit :: Coordinates -> Board -> Board
-markHit (x,y) = transformList x (transformList y Hit (emptyBoard!!x))
+-- TODO: Check if ship was completely destroyed in a guard
+-- | and [isRangeOverlapping (coords, coords) (x, x) | x <- maybe [] allShipCellCoordinates ship] = (True, True, newShips ship, ship)
+fire :: Coordinates -> [Ship] -> (Bool, Bool, [Ship], Maybe Ship)
+fire coords ships
+  | and [isRangeOverlapping (coords, coords) (x, x) | x <- maybe [] allShipCellCoordinates ship] = (True, True, newShips ship, ship)
+  | or [isRangeOverlapping (coords, coords) x | x <- shipsCoords] && isJust ship = (True, False, ships, ship)
+  | otherwise = (False, False, ships, Nothing)
+  where shipsCoords = map coordinates ships
+        ship = find (isRangeOverlapping (coords, coords) . coordinates) ships
+        newShips Nothing = []
+        newShips (Just ship) = removeItem ship ships
 
 opponentPlayer :: Game -> Player
 opponentPlayer game
@@ -49,70 +50,64 @@ opponentPlayer game
 stringToCoordinates :: String -> Coordinates
 stringToCoordinates [x,y]
   | not $ yIsValid y = (-1, -1)
-  | x == 'A' = (0, charToIntMinusOne y)
-  | x == 'B' = (1, charToIntMinusOne y)
-  | x == 'C' = (2, charToIntMinusOne y)
-  | x == 'D' = (3, charToIntMinusOne y)
-  | x == 'E' = (4, charToIntMinusOne y)
-  | x == 'F' = (5, charToIntMinusOne y)
-  | x == 'G' = (6, charToIntMinusOne y)
-  | x == 'H' = (7, charToIntMinusOne y)
-  | x == 'I' = (8, charToIntMinusOne y)
-  | x == 'J' = (9, charToIntMinusOne y)
+  | x == 'A' = (0, charToInt y - 1)
+  | x == 'B' = (1, charToInt y - 1)
+  | x == 'C' = (2, charToInt y - 1)
+  | x == 'D' = (3, charToInt y - 1)
+  | x == 'E' = (4, charToInt y - 1)
+  | x == 'F' = (5, charToInt y - 1)
+  | x == 'G' = (6, charToInt y - 1)
+  | x == 'H' = (7, charToInt y - 1)
+  | x == 'I' = (8, charToInt y - 1)
+  | x == 'J' = (9, charToInt y - 1)
   | otherwise = (-1, -1)
-  where charToIntMinusOne c = digitToInt c - 1 :: Int
-        yIsValid c          = isDigit c && charToIntMinusOne c >= 0 && charToIntMinusOne c <= 9
+  where yIsValid c = isDigit c && charToInt c - 1 >= 0 && charToInt c - 1 <= 9
+stringToCoordinates (x:y)
+  | not $ yIsValid y = (-1, -1)
+  | x == 'A' = (0, stringToIntMinusOne y)
+  | x == 'B' = (1, stringToIntMinusOne y)
+  | x == 'C' = (2, stringToIntMinusOne y)
+  | x == 'D' = (3, stringToIntMinusOne y)
+  | x == 'E' = (4, stringToIntMinusOne y)
+  | x == 'F' = (5, stringToIntMinusOne y)
+  | x == 'G' = (6, stringToIntMinusOne y)
+  | x == 'H' = (7, stringToIntMinusOne y)
+  | x == 'I' = (8, stringToIntMinusOne y)
+  | x == 'J' = (9, stringToIntMinusOne y)
+  | otherwise = (-1, -1)
+  where stringToIntMinusOne str = read str - 1
+        yIsValid str            = stringToIntMinusOne str >= 0 && stringToIntMinusOne str <= 9
 stringToCoordinates _ = (-1, -1)
 
-isValidCoordinates :: Coordinates -> Bool
-isValidCoordinates coords
-  | fst coords >= 0
-    && snd coords >= 0
-    && fst coords <= maxSize
-    && snd coords <= maxSize  = True
-  | otherwise                 = False
-  where maxSize = boardSize - 1
+transformGame :: Coordinates -> Bool -> [Ship] -> Game -> Game
+transformGame coords hit newShips game
+  | currentPlayer game == playerOne game =
+      switchPlayer
+      $ checkGameOver newShips
+      $ game { playerTwo = markShot coords hit originalPlayerTwo }
+  | otherwise =
+      switchPlayer
+      $ checkGameOver newShips
+      $ game { playerOne = markShot coords hit originalPlayerOne }
+  where originalPlayerOne = playerOne game
+        originalPlayerTwo = playerTwo game
 
-isValidShipCoordinates :: (Coordinates, Coordinates) -> Int -> [Ship] -> Bool
-isValidShipCoordinates coords size board
-  | not (isValidCoordinates (fst coords))
-    || not (isValidCoordinates (snd coords))        = False
-  | not $ isShipHorizontal || isShipVertical        = False
-  | isShipHorizontal && horizontalDiff /= size - 1  = False
-  | isShipVertical && verticalDiff /= size - 1      = False
-  | otherwise                                       = True
-  where isShipHorizontal  = isRangeHorizontal coords
-        isShipVertical    = isRangeVertical coords
-        horizontalDiff    = snd (snd coords) - snd (fst coords)
-        verticalDiff      = fst (snd coords) - fst (fst coords)
+markShot :: Coordinates -> Bool -> Player -> Player
+markShot coords hit player
+  | hit       = player { board = markHit coords (board player) }
+  | otherwise = player { board = markMiss coords (board player) }
 
-isValidCoordinatesRange :: (Coordinates, Coordinates) -> Bool
-isValidCoordinatesRange coords
-  | not (isValidCoordinates (fst coords))
-    || not (isValidCoordinates (snd coords))                    = False
-  | not $ isRangeHorizontal coords || isRangeHorizontal coords  = False
-  | isRangeHorizontal coords && horizontalDiff <= 0             = False
-  | isRangeVertical coords && verticalDiff <= 0                 = False
-  | otherwise                                                   = True
-  where horizontalDiff    = snd (snd coords) - snd (fst coords)
-        verticalDiff      = fst (snd coords) - fst (fst coords)
+markMiss :: Coordinates -> Board -> Board
+markMiss (x,y) board = transformList x (transformList y Miss (board!!x)) board
 
-isRangeHorizontal :: (Coordinates, Coordinates) -> Bool
-isRangeHorizontal (x,y)
-  | fst x == fst y  = True
-  | otherwise       = False
+markHit :: Coordinates -> Board -> Board
+markHit (x,y) board = transformList x (transformList y Hit (board!!x)) board
 
-isRangeVertical :: (Coordinates, Coordinates) -> Bool
-isRangeVertical (x,y)
-  | snd x == snd y  = True
-  | otherwise       = False
+updateShips :: [Ship] -> Player -> Player
+updateShips newShips player = player { ships = newShips }
 
-transformGame :: Game -> Game
-transformGame game = undefined
-
--- TODO: Game implementation
---    1. If either of the players' boards has no more Ship cells, the game is over.
---          -> Update the game state to GameOver
---    2. Otherwise return just the game as it is.
-checkGameOver :: Game -> Game
-checkGameOver game = undefined
+checkGameOver :: [Ship] -> Game -> Game
+checkGameOver newShips game
+  | null newShips = game { state = GameOver }
+  | currentPlayer game == playerOne game = game { playerTwo = updateShips newShips $ playerTwo game }
+  | currentPlayer game == playerTwo game = game { playerOne = updateShips newShips $ playerOne game }
