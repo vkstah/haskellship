@@ -21,8 +21,22 @@ $ ghc --make Main.hs
 $ ./Main
 ```
 
-NOTE: The application will attempt to clear the terminal each player turn to prevent players from seeing eachothers' boards. Under the hood, the application runs the command `clear` each turn, which is NOT available in Windows environments. You can disable this feature by running the program with `noclear` flag like so:
+## Sample Game
+
+You can run a premade sample game that uses some example input to demonstrate that the game works:
 
 ```console
-$ runghc Main.hs noclear
+$ ghc Main.hs
+$ ./Main < sample-game
+```
+
+## Caveats
+
+### Terminal clearing
+
+The application will attempt to clear the terminal each player turn to prevent players from seeing eachothers' boards. Under the hood, the application runs the command `clear` each turn, which is NOT available in Windows environments. You can disable this feature by running the program with `noclear` flag like so:
+
+```console
+$ ghc Main.hs
+$ ./Main noclear
 ```
