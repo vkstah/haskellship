@@ -169,7 +169,7 @@ playerTurn game = do
           fireCoords
           (board opponent)
         putStrLn ""
-      -- printTurnCountdown 3
+      printTurnCountdown 3
       playerTurn $ transformGame fireCoords isHit newShips game
 
 main :: IO ()
