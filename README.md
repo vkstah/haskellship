@@ -52,7 +52,7 @@ To place ships, you need to enter a range of coordinates that indicate the head 
 - When the ship is placed horizontally, the coordinates must range from left to right e.g. `C3 C6`
 - When the ship is placed vertically, the coordinates must range from top to bottom e.g. `B2 D2`
 
-## Firing
+### Firing
 
 In order to fire at the opponent's board, you need to enter a single coordinate. The coordinates given must reside inside a 10x10 grid.
 
