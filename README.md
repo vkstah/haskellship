@@ -34,7 +34,7 @@ $ ./Main
 You can run a premade sample game that uses some example input to demonstrate that the game works:
 
 ```console
-$ ghc Main.hs
+$ ghc --make Main.hs
 $ ./Main < sample-game
 ```
 
@@ -63,14 +63,14 @@ In order to fire at the opponent's board, you need to enter a single coordinate.
 The application will attempt to clear the terminal each player turn to prevent players from seeing eachothers' boards. Under the hood, the game runs the command `clear` each turn, which is NOT available in Windows environments. You can disable this feature by running the program with `noclear` flag like so:
 
 ```console
-$ ghc Main.hs
+$ ghc --make Main.hs
 $ ./Main noclear
 ```
 
 You can do this with a sample game as well:
 
 ```console
-$ ghc Main.hs
+$ ghc --make Main.hs
 $ ./Main < sample-game noclear
 ```
 
@@ -79,6 +79,6 @@ $ ./Main < sample-game noclear
 The debug mode will provide you with useful information about what's going on during each turn. You can enter debug mode by including the `debug` flag when running the game:
 
 ```console
-$ ghc Main.hs
+$ ghc --make Main.hs
 $ ./Main debug
 ```
