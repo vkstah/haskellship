@@ -9,7 +9,7 @@ import Board ( Board, emptyBoard, Cell(Unknown, Hit, Miss) )
 import Game
 import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates, coordinatesToCell )
 import Player ( Player(Player, name, ships, board) )
-import Ship ( Coordinates, Ship(Ship, name) )
+import Ship ( Coordinates, Ship(Ship, name, size) )
 import Validate (isValidCoordinates, isValidCoordinatesRange, isValidShipCoordinates, isRangeOverlapping, isHitCell)
 
 type Coordinate = (Int, Int)
@@ -25,8 +25,8 @@ printGreen str = putStrLn $ "\ESC[32m" ++ str ++ "\ESC[0m"
 printRed :: String -> IO ()
 printRed str = putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
 
-printNotification :: String -> IO ()
-printNotification str = putStrLn $ "\ESC[35m" ++ str ++ "\ESC[0m"
+printMagenta :: String -> IO ()
+printMagenta str = putStrLn $ "\ESC[35m" ++ str ++ "\ESC[0m"
 
 printTurnDebug :: [Ship] -> [Ship] -> Maybe Ship -> Int -> Int -> [Coordinates] -> [Cell] -> Coordinates -> Board -> IO ()
 printTurnDebug oldShips newShips ship shipSize shipCellsHitCount shipCoords shipCells fireCoords board = do
@@ -131,42 +131,46 @@ getShips (x:xs) currentShips    = do
 
 playerTurn:: Game -> IO ()
 playerTurn game = do
-  when (shouldClearTerminal game) clearTerminal
   let player = currentPlayer game
   let opponent = opponentPlayer game
-  putStrLn (Player.name player ++ "'s turn!")
-  putStrLn ""
-  printBoard (board opponent)
-  putStrLn ""
-  fireCoords <- getFireCoordinates "Enter coordinates to fire:" (board opponent)
-  printRed $ "Firing at: " ++ show fireCoords ++ "!!!"
-  let (isHit, sunk, newShips, ship, shipSize, shipCellsHitCount, shipCoords, shipCells) = fire fireCoords (board opponent) (ships opponent)
-  putStrLn ""
-  if isHit
+  if state game == GameOver
     then do
-      if sunk
-        then do
-          printGreen $ case ship of
-            Nothing -> "Something odd happened... Where's the ship?"
-            Just ship -> "HIT! You destroyed a " ++ Ship.name ship ++ "!"
-        else do
-          printGreen "HIT!"
+      printMagenta $ Player.name opponent ++ " won the game!" ++ " Game over!"
     else do
-      putStrLn "Miss..."
-  putStrLn ""
-  when (debug game) $ do
-    printTurnDebug (ships opponent)
-      newShips
-      ship
-      shipSize
-      shipCellsHitCount
-      shipCoords
-      shipCells
-      fireCoords
-      (board opponent)
-    putStrLn ""
-  printTurnCountdown 3
-  playerTurn $ transformGame fireCoords isHit newShips game
+      when (shouldClearTerminal game) clearTerminal
+      putStrLn (Player.name player ++ "'s turn!")
+      putStrLn ""
+      printBoard (board opponent)
+      putStrLn ""
+      fireCoords <- getFireCoordinates "Enter coordinates to fire:" (board opponent)
+      printRed $ "Firing at: " ++ show fireCoords ++ "!!!"
+      let (isHit, sunk, newShips, ship, shipSize, shipCellsHitCount, shipCoords, shipCells) = fire fireCoords (board opponent) (ships opponent)
+      putStrLn ""
+      if isHit
+        then do
+          if sunk
+            then do
+              printGreen $ case ship of
+                Nothing -> "Something odd happened... Where's the ship?"
+                Just ship -> "HIT! You destroyed a " ++ Ship.name ship ++ " (" ++ show (Ship.size ship) ++ ")" ++ "!"
+            else do
+              printGreen "HIT!"
+        else do
+          putStrLn "Miss..."
+      putStrLn ""
+      when (debug game) $ do
+        printTurnDebug (ships opponent)
+          newShips
+          ship
+          shipSize
+          shipCellsHitCount
+          shipCoords
+          shipCells
+          fireCoords
+          (board opponent)
+        putStrLn ""
+      -- printTurnCountdown 3
+      playerTurn $ transformGame fireCoords isHit newShips game
 
 main :: IO ()
 main = do

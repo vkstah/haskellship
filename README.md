@@ -1,6 +1,12 @@
 # Haskellship
 
-A simple CLI Battleship game written in Haskell.
+A simple CLI Battleship game written in Haskell that simulates naval warfare. It is played by two players, each with their own grid-based game board representing a fleet of ships. The objective of the game is to strategically deploy your ships on the grid and successfully guess the location of your opponent's ships, ultimately sinking them.
+
+At the beginning of the game, players place their ships on their own grids, and the ships are hidden from the opposing player. The types of ships and their sizes vary: carrier (5), battleship (4), cruiser (3), submarine (3), and destroyer (2). The ships are positioned either horizontally or vertically on the grid, and they cannot overlap or extend beyond the boundaries.
+
+Once the ships are set up, players take turns calling out coordinates on the opponent's grid, attempting to hit their ships. The grids are labeled with numbers along the horizontal axis and letters along the vertical axis, creating a coordinate system. If a player's guess hits a ship, the game will declare it as a hit, and the hit location is marked on the grid. The player can continue to guess in the same vicinity to sink the entire ship. If the guess misses, it is declared as a miss, and the game marks it on the grid to keep track.
+
+The game progresses as players strategically deduce the possible locations of their opponent's ships based on the hits and misses. It requires logical thinking, deduction, and a bit of luck to outmaneuver the opponent and sink their fleet before they sink yours. The first player to successfully sink all of their opponent's ships is declared the winner of the game.
 
 ## Requirements
 
@@ -28,11 +34,17 @@ $ ghc Main.hs
 $ ./Main < sample-game
 ```
 
+## Instructions
+
+### Placing ships
+
+To place ships, you need to enter a range of coordinates that indicate the head and tail of the ship.
+
 ## Caveats
 
 ### Terminal clearing
 
-The application will attempt to clear the terminal each player turn to prevent players from seeing eachothers' boards. Under the hood, the application runs the command `clear` each turn, which is NOT available in Windows environments. You can disable this feature by running the program with `noclear` flag like so:
+The application will attempt to clear the terminal each player turn to prevent players from seeing eachothers' boards. Under the hood, the game runs the command `clear` each turn, which is NOT available in Windows environments. You can disable this feature by running the program with `noclear` flag like so:
 
 ```console
 $ ghc Main.hs
@@ -48,7 +60,7 @@ $ ./Main < sample-game noclear
 
 ### Debug mode
 
-The debug mode will provide you with useful information about what's going on during each turn. You can enter debug mode by including the `debug` flag when running the application:
+The debug mode will provide you with useful information about what's going on during each turn. You can enter debug mode by including the `debug` flag when running the game:
 
 ```console
 $ ghc Main.hs
