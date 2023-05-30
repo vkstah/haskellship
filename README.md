@@ -40,9 +40,21 @@ $ ./Main < sample-game
 
 ## Instructions
 
+## Coordinates
+
+The grids are labeled with numbers along the horizontal axis and letters along the vertical axis, creating a coordinate system. For example, the coordinates `D5` represent the 5th column of the 4th row.
+
 ### Placing ships
 
-To place ships, you need to enter a range of coordinates that indicate the head and tail of the ship.
+To place ships, you need to enter a range of coordinates that indicate the head and tail of the ship. This is done by entering two coordinates that must comply with the following conditions:
+
+- The coordinates must reside inside a 10x10 grid. For example, `D10` is a valid coordinate, but `D11` is not.
+- When the ship is placed horizontally, the coordinates must range from left to right e.g. `C3 C6`
+- When the ship is placed vertically, the coordinates must range from top to bottom e.g. `B2 D2`
+
+## Firing
+
+In order to fire at the opponent's board, you need to enter a single coordinate. The coordinates given must reside inside a 10x10 grid.
 
 ## Caveats
 
