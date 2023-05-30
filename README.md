@@ -40,7 +40,7 @@ $ ./Main < sample-game
 
 ## Instructions
 
-## Coordinates
+### Coordinates
 
 The grids are labeled with numbers along the horizontal axis and letters along the vertical axis, creating a coordinate system. For example, the coordinates `D5` represent the 5th column of the 4th row.
 
