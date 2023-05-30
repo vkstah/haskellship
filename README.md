@@ -1,6 +1,10 @@
 # Haskellship
 
-A simple CLI Battleship game written in Haskell that simulates naval warfare. It is played by two players, each with their own grid-based game board representing a fleet of ships. The objective of the game is to strategically deploy your ships on the grid and successfully guess the location of your opponent's ships, ultimately sinking them.
+A simple CLI Battleship game written in Haskell that simulates naval warfare.
+
+## Description
+
+The game is played by two players, each with their own grid-based game board representing a fleet of ships. The objective of the game is to strategically deploy your ships on the grid and successfully guess the location of your opponent's ships, ultimately sinking them.
 
 At the beginning of the game, players place their ships on their own grids, and the ships are hidden from the opposing player. The types of ships and their sizes vary: carrier (5), battleship (4), cruiser (3), submarine (3), and destroyer (2). The ships are positioned either horizontally or vertically on the grid, and they cannot overlap or extend beyond the boundaries.
 
