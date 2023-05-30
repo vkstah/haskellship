@@ -7,7 +7,7 @@ import System.Process ( system )
 
 import Board ( Board, emptyBoard, Cell(Unknown, Hit, Miss) )
 import Game
-import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates, coordinatesToCell )
+import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates, coordinatesToCell, coordinatesToString )
 import Player ( Player(Player, name, ships, board) )
 import Ship ( Coordinates, Ship(Ship, name, size) )
 import Validate (isValidCoordinates, isValidCoordinatesRange, isValidShipCoordinates, isRangeOverlapping, isHitCell)
@@ -77,10 +77,10 @@ getCoordinates str = do
       if isValidCoordinates coords
         then do return coords
         else do
-          printRed "ERROR: Invalid coordinates."
+          printRed "ERROR: Invalid coordinates"
           getCoordinates str
     else do
-      printRed "ERROR: Invalid coordinates."
+      printRed "ERROR: Invalid coordinates"
       getCoordinates str
 
 getCoordinatesRange :: String -> IO (Coordinates, Coordinates)
@@ -143,7 +143,7 @@ playerTurn game = do
       printBoard (board opponent)
       putStrLn ""
       fireCoords <- getFireCoordinates "Enter coordinates to fire:" (board opponent)
-      printRed $ "Firing at: " ++ show fireCoords ++ "!!!"
+      printRed $ "Firing at: " ++ coordinatesToString fireCoords ++ "!!!"
       let (isHit, sunk, newShips, ship, shipSize, shipCellsHitCount, shipCoords, shipCells) = fire fireCoords (board opponent) (ships opponent)
       putStrLn ""
       if isHit

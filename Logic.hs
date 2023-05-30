@@ -3,6 +3,7 @@ module Logic where
 import Data.Char
 import Data.List
 import Data.Maybe (isJust)
+import Text.Read
 
 import Board ( Board, Cell(Unknown, Miss, Hit), emptyBoard )
 import Game ( Game(state, playerOne, playerTwo, currentPlayer), boardSize, State (Running, GameOver) )
@@ -83,8 +84,23 @@ stringToCoordinates (x:y)
   | x == 'J' = (9, stringToIntMinusOne y)
   | otherwise = (-1, -1)
   where stringToIntMinusOne str = read str - 1
-        yIsValid str            = stringToIntMinusOne str >= 0 && stringToIntMinusOne str <= 9
+        yIsValid str            = isJust (readMaybe str :: Maybe Int) && stringToIntMinusOne str >= 0 && stringToIntMinusOne str <= 9
 stringToCoordinates _ = (-1, -1)
+
+coordinatesToString :: Coordinates -> String
+coordinatesToString (x,y)
+  | x == 0 = "A" ++ intToStringPlusOne
+  | x == 1 = "B" ++ intToStringPlusOne
+  | x == 2 = "C" ++ intToStringPlusOne
+  | x == 3 = "D" ++ intToStringPlusOne
+  | x == 4 = "E" ++ intToStringPlusOne
+  | x == 5 = "F" ++ intToStringPlusOne
+  | x == 6 = "G" ++ intToStringPlusOne
+  | x == 7 = "H" ++ intToStringPlusOne
+  | x == 8 = "I" ++ intToStringPlusOne
+  | x == 9 = "J" ++ intToStringPlusOne
+  | otherwise = "A0"
+  where intToStringPlusOne = show $ y + 1
 
 transformGame :: Coordinates -> Bool -> [Ship] -> Game -> Game
 transformGame coords hit newShips game
