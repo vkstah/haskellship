@@ -21,8 +21,6 @@ $ ghc --make Main.hs
 $ ./Main
 ```
 
-## Sample Game
-
 You can run a premade sample game that uses some example input to demonstrate that the game works:
 
 ```console
@@ -46,4 +44,13 @@ You can do this with a sample game as well:
 ```console
 $ ghc Main.hs
 $ ./Main < sample-game noclear
+```
+
+### Debug mode
+
+The debug mode will provide you with useful information about what's going on during each turn. You can enter debug mode by including the `debug` flag when running the application:
+
+```console
+$ ghc Main.hs
+$ ./Main debug
 ```

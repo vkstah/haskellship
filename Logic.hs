@@ -4,12 +4,12 @@ import Data.Char
 import Data.List
 import Data.Maybe (isJust)
 
-import Board ( Board, Cell(Empty, Miss, Hit), emptyBoard )
+import Board ( Board, Cell(Unknown, Miss, Hit), emptyBoard )
 import Game ( Game(state, playerOne, playerTwo, currentPlayer), boardSize, State (Running, GameOver) )
 import Player ( Player(Player, name, ships, board) )
 import Ship ( Ship(name, coordinates, size), Coordinates )
 import Utility ( transformList, charToInt, removeItem )
-import Validate ( isRangeOverlapping, isHitCell, isEmptyCell, isMissCell, horizontalDiff, isRangeHorizontal, verticalDiff, isRangeVertical )
+import Validate ( isRangeOverlapping, isHitCell, isUnknownCell, isMissCell, horizontalDiff, isRangeHorizontal, verticalDiff, isRangeVertical, isValidCoordinates )
 
 switchPlayer :: Game -> Game
 switchPlayer game
@@ -19,7 +19,7 @@ switchPlayer game
 mapCellToBoard :: Cell -> Char
 mapCellToBoard cell
   | isHitCell cell = 'x'
-  | isEmptyCell cell = ' '
+  | isUnknownCell cell = ' '
   | isMissCell cell = 'o'
   | otherwise = '?'
 
@@ -30,17 +30,24 @@ allShipCellCoordinates ship
   | isRangeVertical $ coordinates ship =
       [(x, y) | x <- [snd $ fst $ coordinates ship], y <- [fst (fst $ coordinates ship) .. fst (snd $ coordinates ship)]]
 
--- TODO: Check if ship was completely destroyed in a guard
--- | and [isRangeOverlapping (coords, coords) (x, x) | x <- maybe [] allShipCellCoordinates ship] = (True, True, newShips ship, ship)
-fire :: Coordinates -> [Ship] -> (Bool, Bool, [Ship], Maybe Ship)
-fire coords ships
-  | and [isRangeOverlapping (coords, coords) (x, x) | x <- maybe [] allShipCellCoordinates ship] = (True, True, newShips ship, ship)
-  | or [isRangeOverlapping (coords, coords) x | x <- shipsCoords] && isJust ship = (True, False, ships, ship)
-  | otherwise = (False, False, ships, Nothing)
+fire :: Coordinates -> Board -> [Ship] -> (Bool, Bool, [Ship], Maybe Ship, Int, Int, [Coordinates], [Cell])
+fire coords board ships
+  | isJust ship && shipCellsHitCount == maybe 0 size ship - 1 = (True, True, newShips ship, ship, maybe 0 size ship, shipCellsHitCount, shipCoords, shipCells)
+  | isJust ship = (True, False, ships, ship, maybe 0 size ship, shipCellsHitCount, shipCoords, shipCells)
+  | otherwise = (False, False, ships, Nothing, 0, 0, [], [])
   where shipsCoords = map coordinates ships
         ship = find (isRangeOverlapping (coords, coords) . coordinates) ships
-        newShips Nothing = []
+        newShips Nothing = ships
         newShips (Just ship) = removeItem ship ships
+        cell c = coordinatesToCell c board
+        shipCoords = maybe [] allShipCellCoordinates ship
+        shipCells = [cell x | x <- maybe [] allShipCellCoordinates ship]
+        shipCellsHitCount = length $ filter id [isHitCell $ cell x | x <- maybe [] allShipCellCoordinates ship]
+
+coordinatesToCell :: Coordinates -> Board -> Cell
+coordinatesToCell coords board = (board !! x) !! y
+  where x = fst coords
+        y = snd coords
 
 opponentPlayer :: Game -> Player
 opponentPlayer game

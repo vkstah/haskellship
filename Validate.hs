@@ -2,7 +2,7 @@ module Validate where
 
 import Game
 import Ship ( Coordinates, Ship(coordinates) )
-import Board (Cell (Hit, Empty, Miss))
+import Board (Cell (Hit, Unknown, Miss))
 
 isValidCoordinates :: Coordinates -> Bool
 isValidCoordinates coords
@@ -55,9 +55,9 @@ isRangeOverlapping :: (Coordinates, Coordinates) -> (Coordinates, Coordinates) -
 isRangeOverlapping ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4)) =
   x1 <= x4 && x2 >= x3 && y1 <= y4 && y2 >= y3
 
-isEmptyCell :: Cell -> Bool
-isEmptyCell Empty = True
-isEmptyCell _ = False
+isUnknownCell :: Cell -> Bool
+isUnknownCell Unknown = True
+isUnknownCell _ = False
 
 isHitCell :: Cell -> Bool
 isHitCell Hit = True

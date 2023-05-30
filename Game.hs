@@ -10,6 +10,7 @@ data Game = Game
   , playerTwo :: Player
   , currentPlayer :: Player
   , shouldClearTerminal :: Bool
+  , debug :: Bool
   } deriving (Eq, Show)
 
 boardSize :: Int
@@ -21,5 +22,5 @@ shipTypes = [("Destroyer", 2), ("Submarine", 3), ("Cruiser", 3), ("Battleship", 
 initialShips :: [Ship]
 initialShips = []
 
-initialGame :: (Player, Player) -> Bool -> Game
+initialGame :: (Player, Player) -> Bool -> Bool -> Game
 initialGame players = uncurry (Game Running) players (fst players)

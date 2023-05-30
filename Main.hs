@@ -5,12 +5,12 @@ import GHC.IO.Exception ()
 import System.Environment ( getArgs )
 import System.Process ( system )
 
-import Board ( Board, emptyBoard, Cell(Empty, Hit, Miss) )
+import Board ( Board, emptyBoard, Cell(Unknown, Hit, Miss) )
 import Game
-import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates )
+import Logic ( fire, switchPlayer, stringToCoordinates, mapCellToBoard, markHit, markMiss, opponentPlayer, transformGame, allShipCellCoordinates, coordinatesToCell )
 import Player ( Player(Player, name, ships, board) )
 import Ship ( Coordinates, Ship(Ship, name) )
-import Validate (isValidCoordinates, isValidCoordinatesRange, isValidShipCoordinates, isRangeOverlapping)
+import Validate (isValidCoordinates, isValidCoordinatesRange, isValidShipCoordinates, isRangeOverlapping, isHitCell)
 
 type Coordinate = (Int, Int)
 
@@ -19,14 +19,24 @@ clearTerminal = do
   system "clear"
   return ()
 
-printSuccess :: String -> IO()
-printSuccess str = putStrLn $ "\ESC[32m" ++ str ++ "\ESC[0m"
+printGreen :: String -> IO()
+printGreen str = putStrLn $ "\ESC[32m" ++ str ++ "\ESC[0m"
 
-printError :: String -> IO ()
-printError str = putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
+printRed :: String -> IO ()
+printRed str = putStrLn $ "\ESC[31m" ++ str ++ "\ESC[0m"
 
 printNotification :: String -> IO ()
 printNotification str = putStrLn $ "\ESC[35m" ++ str ++ "\ESC[0m"
+
+printTurnDebug :: [Ship] -> [Ship] -> Maybe Ship -> Int -> Int -> [Coordinates] -> [Cell] -> Coordinates -> Board -> IO ()
+printTurnDebug oldShips newShips ship shipSize shipCellsHitCount shipCoords shipCells fireCoords board = do
+  putStrLn $ "Old: " ++ show (map Ship.name oldShips)
+  putStrLn $ "New: " ++ show (map Ship.name newShips)
+  putStrLn $ "Ship hit: " ++ maybe "-" Ship.name ship ++ " (" ++ show shipSize ++ ")"
+  putStrLn $ "Cells hit: " ++ show shipCellsHitCount ++ " / " ++ show shipSize
+  putStrLn $ "Ship coordinates: " ++ show shipCoords
+  putStrLn $ "Ship cells: " ++ show shipCells
+  putStrLn $ "Cell type: " ++ show (coordinatesToCell fireCoords board)
 
 printTurnCountdown :: Int -> IO Bool
 printTurnCountdown seconds = do
@@ -67,10 +77,10 @@ getCoordinates str = do
       if isValidCoordinates coords
         then do return coords
         else do
-          printError "ERROR: Invalid coordinates."
+          printRed "ERROR: Invalid coordinates."
           getCoordinates str
     else do
-      printError "ERROR: Invalid coordinates."
+      printRed "ERROR: Invalid coordinates."
       getCoordinates str
 
 getCoordinatesRange :: String -> IO (Coordinates, Coordinates)
@@ -85,11 +95,22 @@ getCoordinatesRange str = do
       if isValidCoordinatesRange coordsRange
         then do return coordsRange
         else do
-          printError "ERROR: Invalid coordinates range."
+          printRed "ERROR: Invalid coordinates range"
           getCoordinatesRange str
     else do
-      printError "ERROR: Invalid coordinates range."
+      printRed "ERROR: Invalid coordinates range"
       getCoordinatesRange str
+
+getFireCoordinates :: String -> Board -> IO Coordinates
+getFireCoordinates str board = do
+  fireCoords <- getCoordinates str
+  let cell = coordinatesToCell fireCoords board
+  if isHitCell cell
+    then do
+      printRed "ERROR: You've already shot there"
+      getFireCoordinates str board
+    else do
+      return fireCoords
 
 getShip :: String -> Int -> [Ship] -> IO Ship
 getShip name size currentShips = do
@@ -98,7 +119,7 @@ getShip name size currentShips = do
     then do
       return $ Ship name range size
     else do
-      printError "ERROR: Invalid ship coordinates."
+      printRed "ERROR: Invalid ship coordinates"
       getShip name size currentShips
 
 getShips :: [(String, Int)] -> [Ship] -> IO [Ship]
@@ -117,20 +138,33 @@ playerTurn game = do
   putStrLn ""
   printBoard (board opponent)
   putStrLn ""
-  fireCoords <- getCoordinates "Enter coordinates to fire:"
-  let (isHit, sunk, newShips, ship) = fire fireCoords $ ships opponent
+  fireCoords <- getFireCoordinates "Enter coordinates to fire:" (board opponent)
+  printRed $ "Firing at: " ++ show fireCoords ++ "!!!"
+  let (isHit, sunk, newShips, ship, shipSize, shipCellsHitCount, shipCoords, shipCells) = fire fireCoords (board opponent) (ships opponent)
+  putStrLn ""
   if isHit
     then do
       if sunk
         then do
-          putStrLn $ case ship of
+          printGreen $ case ship of
             Nothing -> "Something odd happened... Where's the ship?"
-            Just ship -> "Hit! You destroyed a " ++ Ship.name ship ++ "!"
+            Just ship -> "HIT! You destroyed a " ++ Ship.name ship ++ "!"
         else do
-          putStrLn "Hit!"
+          printGreen "HIT!"
     else do
       putStrLn "Miss..."
   putStrLn ""
+  when (debug game) $ do
+    printTurnDebug (ships opponent)
+      newShips
+      ship
+      shipSize
+      shipCellsHitCount
+      shipCoords
+      shipCells
+      fireCoords
+      (board opponent)
+    putStrLn ""
   printTurnCountdown 3
   playerTurn $ transformGame fireCoords isHit newShips game
 
@@ -151,7 +185,7 @@ main = do
   playerTwoShips <- getShips shipTypes initialShips
   let playerTwo = Player playerTwoName playerTwoShips playerTwoBoard
   let players = (playerOne, playerTwo)
-  playerTurn $ initialGame players $ "noclear" `notElem` args
+  playerTurn $ initialGame players ("noclear" `notElem` args) ("debug" `elem` args)
 
   -- TODO: Game implementation
   --    1. Initialize empty board (10x10) for each player
